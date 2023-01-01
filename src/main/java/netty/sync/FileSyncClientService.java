@@ -32,11 +32,27 @@ public class FileSyncClientService {
      */
     private Channel channel;
 
+    /**
+     * 需要排除监听的文件夹
+     */
+    private List<Path> paths;
+
     public FileSyncClientService() {
         System.out.println(this.getClass().getSimpleName().concat(": init"));
 
         try {
             watchService = FileSystems.getDefault().newWatchService();
+            Path gitignore = root.resolve(".gitignore");
+
+            List<Path> paths = new ArrayList<>();
+
+            Files.readAllLines(gitignore).forEach(line -> {
+                if (!line.isBlank() && line.charAt(0) != '#') {
+                    Path resolve = root.resolveSibling(line);
+                    paths.add(resolve);
+                    System.out.println(resolve.toAbsolutePath());
+                }
+            });
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -77,42 +93,11 @@ public class FileSyncClientService {
      */
     private void syncFiles() throws IOException {
 
-
-        Path gitignore = root.resolve(".gitignore");
-
-        if (!Files.exists(gitignore)) {
-            throw new RuntimeException(".gitignore 文件不存在");
-        }
-
-        List<Path> paths = new ArrayList<>();
-
-        List<PathMatcher> matchers = new ArrayList<>();
-
-        FileSystem fileSystem = FileSystems.getDefault();
-
-        Files.readAllLines(gitignore).forEach(line -> {
-            char c = line.charAt(0);
-            if (!line.isBlank() && c != '#') {
-                if (c == '*') {
-                    matchers.add(fileSystem.getPathMatcher(line));
-                } else {
-                    paths.add(root.resolve(line));
-                }
-            }
-        });
-
-
-        // 遍历根目录 将所有文件发送到服务器
+        // 将所有文件同步到服务器
         Files.walkFileTree(root, new SimpleFileVisitor<>() {
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-
-                for (PathMatcher matcher : matchers) {
-                    if (matcher.matches(file)) {
-                        return FileVisitResult.CONTINUE;
-                    }
-                }
 
                 if (Files.size(file) < maxLength) {
                     channel.writeAndFlush(buildFileRequest(file, false));
@@ -124,6 +109,7 @@ public class FileSyncClientService {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
 
+                // 该文件夹属于无需上传的文件夹
                 for (Path path : paths) {
                     if (dir.equals(path)) {
                         return FileVisitResult.CONTINUE;
