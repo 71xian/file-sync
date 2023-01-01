@@ -9,7 +9,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>cn.chenyuxian</groupId>
-    <artifactId>file-sync</artifactId>
+    <artifactId>netty-tools</artifactId>
     <version>1.0</version>
 
     <properties>
@@ -36,7 +36,8 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>netty.Start</mainClass>
+                    <mainClass>netty.Application</mainClass>
+                    <finalName>${project.name}</finalName>
                 </configuration>
             </plugin>
         </plugins>

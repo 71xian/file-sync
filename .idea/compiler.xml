@@ -2,30 +2,21 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <annotationProcessing>
-      <profile default="true" name="Default" enabled="true" />
       <profile name="Maven default annotation processors profile" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="netty-tools" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="file-sync" target="17" />
-      <module name="Gobang" target="1.5" />
-      <module name="netty" target="17" />
-      <module name="netty-demo" target="17" />
-      <module name="netty-websocket" target="17" />
-      <module name="socket-demo" target="17" />
+      <module name="FileSync" target="17" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
-      <module name="Gobang" options="" />
-      <module name="file-sync" options="-parameters" />
-      <module name="netty" options="-parameters" />
-      <module name="netty-demo" options="-parameters" />
-      <module name="netty-websocket" options="-parameters" />
-      <module name="socket-demo" options="-parameters" />
+      <module name="FileSync" options="-parameters" />
+      <module name="netty-tools" options="-parameters" />
     </option>
   </component>
 </project>
