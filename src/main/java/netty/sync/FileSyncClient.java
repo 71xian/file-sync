@@ -10,9 +10,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import netty.sync.handler.FileSyncClientHandler;
-import netty.sync.initializer.FileSyncProtocolInitializer;
-import netty.sync.service.FileSyncClientService;
 
 import java.util.concurrent.TimeUnit;
 
@@ -49,6 +46,7 @@ public class FileSyncClient {
 
         b.group(workerGroup)
                 .channel(clazz)
+                .option(ChannelOption.SO_KEEPALIVE,true)
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
@@ -82,13 +80,10 @@ public class FileSyncClient {
                 // 向服务端发送F 请求服务端切换到文件同步服务
                 buf.writeBytes("FUCK".getBytes());
                 channel.writeAndFlush(buf).sync();
-
                 ChannelPipeline pipeline = channel.pipeline();
-                pipeline.addLast(new FileSyncProtocolInitializer());
-                pipeline.addLast(new FileSyncClientHandler());
+                pipeline.addLast(new ProtobufInitializer());
                 pipeline.remove(pipeline.first());
 
-                TimeUnit.SECONDS.sleep(2);
                 // 只有设置了FileSyncProtocolInitializer
                 // 文件同步服务才能绑定客户端channel
                 // 因为文件请求的编解码需要相应的handler支持

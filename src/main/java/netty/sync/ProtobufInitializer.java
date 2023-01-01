@@ -1,4 +1,4 @@
-package netty.sync.initializer;
+package netty.sync;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
@@ -9,7 +9,7 @@ import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 import netty.protocols.protobuf.Request;
 
-public class FileSyncProtocolInitializer extends ChannelInitializer<SocketChannel> {
+public class ProtobufInitializer extends ChannelInitializer<SocketChannel> {
 
     @Override
     protected void initChannel(SocketChannel ch) throws Exception {

@@ -1,4 +1,4 @@
-package netty.sync.service;
+package netty.sync;
 
 import com.google.protobuf.ByteString;
 import io.netty.channel.Channel;
@@ -8,6 +8,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.sun.nio.file.SensitivityWatchEventModifier.HIGH;
 import static java.nio.file.StandardWatchEventKinds.*;
@@ -32,11 +34,13 @@ public class FileSyncClientService {
 
     public FileSyncClientService() {
         System.out.println(this.getClass().getSimpleName().concat(": init"));
+
         try {
             watchService = FileSystems.getDefault().newWatchService();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
     }
 
     /**
@@ -73,23 +77,57 @@ public class FileSyncClientService {
      */
     private void syncFiles() throws IOException {
 
+
+        Path gitignore = root.resolve(".gitignore");
+
+        if (!Files.exists(gitignore)) {
+            throw new RuntimeException(".gitignore 文件不存在");
+        }
+
+        List<Path> paths = new ArrayList<>();
+
+        List<PathMatcher> matchers = new ArrayList<>();
+
+        FileSystem fileSystem = FileSystems.getDefault();
+
+        Files.readAllLines(gitignore).forEach(line -> {
+            char c = line.charAt(0);
+            if (!line.isBlank() && c != '#') {
+                if (c == '*') {
+                    matchers.add(fileSystem.getPathMatcher(line));
+                } else {
+                    paths.add(root.resolve(line));
+                }
+            }
+        });
+
+
         // 遍历根目录 将所有文件发送到服务器
-        Files.walkFileTree(Path.of(root), new SimpleFileVisitor<>() {
+        Files.walkFileTree(root, new SimpleFileVisitor<>() {
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+
+                for (PathMatcher matcher : matchers) {
+                    if (matcher.matches(file)) {
+                        return FileVisitResult.CONTINUE;
+                    }
+                }
+
                 if (Files.size(file) < maxLength) {
                     channel.writeAndFlush(buildFileRequest(file, false));
                 }
+
                 return FileVisitResult.CONTINUE;
             }
 
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
 
-                // 这些文件夹没必要传输
-                if (dir.endsWith(".git") || dir.endsWith(".idea") || dir.endsWith("target")) {
-                    return FileVisitResult.SKIP_SUBTREE;
+                for (Path path : paths) {
+                    if (dir.equals(path)) {
+                        return FileVisitResult.CONTINUE;
+                    }
                 }
 
                 // 文件夹注册到监听服务上
@@ -187,7 +225,7 @@ public class FileSyncClientService {
         // 获取相对路径
         // 因为服务器的根路径和客户端的根路径不同
         // 但是服务器的相对路径和客户端的相对路径是相同的
-        Path relative = Path.of(root).relativize(path);
+        Path relative = root.relativize(path);
 
         StringBuilder sb = new StringBuilder();
 
@@ -212,9 +250,8 @@ public class FileSyncClientService {
 
         ByteString data = ByteString.copyFrom(Files.readAllBytes(path));
 
-        // 将该文件的内容当做命令传给服务器
-        // 不需要路径
-        if (filePath.endsWith("history.sh")) {
+        // 只有在history文件触发修改才发送命令
+        if (filePath.endsWith("history.sh") && event == MODIFY) {
             return builder.setData(data).build();
         }
 
