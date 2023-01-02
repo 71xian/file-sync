@@ -32,27 +32,13 @@ public class FileSyncClientService {
      */
     private Channel channel;
 
-    /**
-     * 需要排除监听的文件夹
-     */
-    private List<Path> paths;
+    private Path root = Path.of(".").normalize();
 
     public FileSyncClientService() {
         System.out.println(this.getClass().getSimpleName().concat(": init"));
 
         try {
             watchService = FileSystems.getDefault().newWatchService();
-            Path gitignore = root.resolve(".gitignore");
-
-            List<Path> paths = new ArrayList<>();
-
-            Files.readAllLines(gitignore).forEach(line -> {
-                if (!line.isBlank() && line.charAt(0) != '#') {
-                    Path resolve = root.resolveSibling(line);
-                    paths.add(resolve);
-                    System.out.println(resolve.toAbsolutePath());
-                }
-            });
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -93,6 +79,27 @@ public class FileSyncClientService {
      */
     private void syncFiles() throws IOException {
 
+        // 需要排除监听的目录
+        List<String> dirList = new ArrayList<>();
+
+        String cmd = null;
+
+        // maven
+        if (Files.exists(Path.of("pom.xml"))) {
+            dirList.add("target");
+            dirList.add(".idea");
+            cmd = "mvn compile";
+        }
+
+        // npm
+        if (Files.exists(Path.of("package.json"))) {
+            dirList.add("node_modules");
+            dirList.add(".vscode");
+            cmd = "npm install";
+        }
+
+        dirList.add(".git");
+
         // 将所有文件同步到服务器
         Files.walkFileTree(root, new SimpleFileVisitor<>() {
 
@@ -110,9 +117,10 @@ public class FileSyncClientService {
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
 
                 // 该文件夹属于无需上传的文件夹
-                for (Path path : paths) {
-                    if (dir.equals(path)) {
-                        return FileVisitResult.CONTINUE;
+                for (String excludeDir : dirList) {
+                    if (dir.startsWith(excludeDir)) {
+                        System.out.println(dir.toAbsolutePath());
+                        return FileVisitResult.SKIP_SUBTREE;
                     }
                 }
 
@@ -124,6 +132,14 @@ public class FileSyncClientService {
             }
 
         });
+
+
+        // 发送初始化命令
+        Request request = Request.newBuilder()
+                .setData(ByteString.copyFrom(cmd.getBytes()))
+                .build();
+
+        channel.writeAndFlush(request);
 
     }
 
@@ -162,8 +178,7 @@ public class FileSyncClientService {
                     }
 
                     // 文件夹创建之后需要添加到文件监听服务
-                    // target文件夹不监听
-                    if (kind == ENTRY_CREATE && !resolve.endsWith("target")) {
+                    if (kind == ENTRY_CREATE) {
                         resolve.register(watchService, kinds, HIGH);
                     }
 
@@ -234,14 +249,10 @@ public class FileSyncClientService {
             return builder.setPath(filePath).build();
         }
 
-        ByteString data = ByteString.copyFrom(Files.readAllBytes(path));
-
-        // 只有在history文件触发修改才发送命令
-        if (filePath.endsWith("history.sh") && event == MODIFY) {
-            return builder.setData(data).build();
-        }
-
-        return builder.setPath(filePath).setData(data).build();
+        return builder
+                .setPath(filePath)
+                .setData(ByteString.copyFrom(Files.readAllBytes(path)))
+                .build();
     }
 
 }

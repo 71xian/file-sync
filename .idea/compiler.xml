@@ -7,16 +7,18 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="netty-tools" />
+        <module name="file-sync" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="FileSync" target="17" />
+      <module name="netty-tools" target="17" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="FileSync" options="-parameters" />
+      <module name="file-sync" options="-parameters" />
       <module name="netty-tools" options="-parameters" />
     </option>
   </component>

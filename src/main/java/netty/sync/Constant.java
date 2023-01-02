@@ -1,7 +1,6 @@
 package netty.sync;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.nio.file.WatchEvent;
 
 import static java.nio.file.StandardWatchEventKinds.*;
@@ -41,11 +40,6 @@ public interface Constant {
      */
     char MODIFY = 'M';
 
-    /**
-     * 项目根目录
-     */
-    Path root = Path.of(".").normalize();
-
 
     /**
      * 文件监听事件类型  创建/删除/修改
@@ -61,5 +55,6 @@ public interface Constant {
      * 系统标识
      */
     boolean os = File.pathSeparatorChar == ';';
+
 
 }

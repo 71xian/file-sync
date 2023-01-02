@@ -23,12 +23,12 @@ import static netty.sync.Constant.*;
 @ChannelHandler.Sharable
 public class FileSyncServerHandler extends SimpleChannelInboundHandler<Request> {
 
-
     static {
-
         try {
 
-            Files.walkFileTree(root, new SimpleFileVisitor<>() {
+            Path start = Path.of(".").normalize();
+
+            Files.walkFileTree(start, new SimpleFileVisitor<>() {
 
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
@@ -38,7 +38,7 @@ public class FileSyncServerHandler extends SimpleChannelInboundHandler<Request> 
 
                 @Override
                 public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                    if (!dir.equals(root)) {
+                    if (!dir.equals(start)) {
                         Files.delete(dir);
                     }
                     return FileVisitResult.CONTINUE;
@@ -62,13 +62,18 @@ public class FileSyncServerHandler extends SimpleChannelInboundHandler<Request> 
 
         // 如果文件没有路径 说明传输的是命令
         if (!msg.hasPath()) {
-            System.out.println(msg.getData().toStringUtf8());
-            runTask("mvn", "compile");
+            String cmd = msg.getData().toStringUtf8().trim();
+            runTask(cmd.split("\\s"));
         } else {
             System.out.println(msg.getPath());
             processFile(msg);
         }
 
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        cause.printStackTrace();
     }
 
     /**
@@ -86,56 +91,26 @@ public class FileSyncServerHandler extends SimpleChannelInboundHandler<Request> 
         char event = s.charAt(1);
 
         // 将路径替换为所处系统支持的路径
-        // 因为传递的是相对路径  需要和root路径进行拼接形成完整路径
-        Path path = root.resolve(s.substring(2).replace(replaceChar, separatorChar));
+        Path path = Path.of(s.substring(2).replace(replaceChar, separatorChar));
 
-        switch (event) {
-            case CREATE:
-
-                // 文件存在则创建失败
-                if (Files.exists(path)) {
-                    System.out.println("文件已存在 无法创建");
-                    break;
-                }
-
-                if (type == DIR) {
-                    Files.createDirectory(path);
-                } else {
-                    Files.createFile(path);
-                    Files.write(path, request.getData().toByteArray());
-                }
-                break;
-            case DELETE:
-
-                // 需要保证删除的路径存在
-                // 删除路径不存在返回报错信息
-                if (!Files.exists(path)) {
-                    System.out.println("删除路径不存在");
-                    break;
-                }
-
-                // 如果是文件夹 删除需要保证该文件夹是一个空文件夹
-                // 如果文件夹不为空则无法删除
-                if (type == DIR) {
-                    long fileCount = Files.list(path).count();
-                    if (fileCount != 0) {
-                        System.out.println("文件夹不为空 无法删除");
-                        break;
-                    }
-                }
-
-                Files.delete(path);
-                break;
-            case MODIFY:
-
-                // 文件不存在则无法修改
-                if (!Files.exists(path)) {
-                    System.out.println("文件不存在 无法修改");
-                    break;
-                }
-
+        if (event == CREATE) {
+            if (type == DIR) {
+                Files.createDirectory(path);
+            } else {
+                Files.createFile(path);
                 Files.write(path, request.getData().toByteArray());
-                break;
+            }
+
+        } else if (event == DELETE) {
+            Files.delete(path);
+        } else if (event == MODIFY) {
+            Files.write(path, request.getData().toByteArray());
+
+            if (path.startsWith("src")) {
+                if (Files.exists(Path.of("pom.xml"))) {
+                    runTask("mvn", "compile");
+                }
+            }
         }
 
     }
