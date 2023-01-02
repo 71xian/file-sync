@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package netty.sync.proto;
+
+option java_outer_classname = 'RequestProto';
+option java_multiple_files = true;
+
+message Request {
+  optional string path = 1;
+  optional bytes data = 2;
+}

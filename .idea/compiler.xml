@@ -8,6 +8,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="file-sync" />
+        <module name="websocket" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
@@ -19,7 +20,9 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="FileSync" options="-parameters" />
       <module name="file-sync" options="-parameters" />
+      <module name="netty" options="" />
       <module name="netty-tools" options="-parameters" />
+      <module name="websocket" options="-parameters" />
     </option>
   </component>
 </project>
