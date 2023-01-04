@@ -1,0 +1,8 @@
+mvn compile
+mvn compile
+mvn package
+mvn compile
+history
+mvn compile
+mvn clean package
+mvn clean package

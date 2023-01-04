@@ -9,7 +9,7 @@
         <version>1.0</version>
     </parent>
 
-    <artifactId>websocket</artifactId>
+    <artifactId>fileSync</artifactId>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -17,13 +17,21 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>3.21.12</version>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>netty.gateway.Start</mainClass>
+                    <mainClass>netty.fileSync.Start</mainClass>
                     <finalName>${project.name}</finalName>
                 </configuration>
             </plugin>

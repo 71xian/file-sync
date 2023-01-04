@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package netty.sync.protocol;
+
+option java_outer_classname = 'TransferProtocol';
+option optimize_for = SPEED;
+option java_multiple_files = false;
+
+enum FileType {
+  FILE = 0;
+  DIR = 1;
+}
+
+enum FileEvent {
+  CREATE = 0;
+  DELETE = 1;
+  MODIFY = 2;
+}
+
+message FileRequest {
+  FileType type = 1;
+  FileEvent event = 2;
+  string path = 3;
+  optional bytes data = 4;
+}
+
